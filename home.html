@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="glass-card" style="max-width: 600px; text-align: center;">
+	<h1>Welcome to A2SL</h1>
+	<p style="margin-bottom: 2rem; color: var(--text-secondary); font-size: 1.1rem;">
+		Convert speech to sign language dynamically. We help bridge the communication gap.
+	</p>
+	<div style="border-radius: 16px; overflow: hidden; margin-bottom: 2rem; box-shadow: var(--glass-shadow);">
+		<video width="100%" autoplay loop muted>
+		  <source src="{% static 'Hello.mp4' %}" type="video/mp4">
+		  Your browser does not support the video tag.
+		</video>
+	</div>
+	
+	<a href="{% url 'animation' %}" style="text-decoration: none;">
+		<button class="btn-primary" style="font-size: 1.2rem; padding: 1.2rem;">Click to Start Translating</button>
+	</a>
+</div>
+{% endblock %}

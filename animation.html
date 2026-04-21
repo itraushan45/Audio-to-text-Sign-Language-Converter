@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="animation-layout">
+	<!-- Left Panel: Input & Info -->
+	<div class="panel">
+		<h2>Text to Sign Translator</h2>
+		
+		<form action="" method="post" class="form-style" style="max-width: 100%; margin: 0; padding: 0;">
+			{% csrf_token %}
+			<div class="input-group">
+				<input type="text" name="sen" class="input-text" id="speechToText" placeholder="Enter text or use microphone..." value="{{ text|default:'' }}">
+				
+				<button type="button" class="btn-icon" onclick="record()" title="Use Microphone">
+					<img src="{% static 'mic3.png' %}" alt="Mic" />
+				</button>
+			</div>
+			
+			<button type="submit" name="submit" class="btn-submit" style="width: 100%; margin-bottom: 2rem;">Translate Now</button>
+		</form>
+
+		{% if error %}
+		<div class="error-msg">
+			{{ error }}
+		</div>
+		{% endif %}
+
+		{% if words %}
+		<table class="info-table">
+			<tr>
+				<td>Original Text</td>
+				<td>{{ text }}</td>
+			</tr>
+			<tr>
+				<td>Keyword Tokens</td>
+				<td>
+					<ul class="word-list" id="list">
+						{% for word in words %}
+						<li id="{{ i }}">{{ word }}</li>
+						{% endfor %}
+					</ul>
+				</td>
+			</tr>
+		</table>
+		{% endif %}
+	</div>
+
+	<!-- Right Panel: Video Animation -->
+	<div class="panel">
+		<h2>Sign Language Animation</h2>
+		<div class="video-container">
+			<video id="videoPlayer" preload="auto" autoplay>
+				<source src="" type="video/mp4">
+				Your browser does not support HTML5 video.
+			</video>
+			<div class="controls">
+				<button class="btn-submit" onclick="playPause()">Play / Pause / Replay</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	// webkitSpeechRecognition api for speech to text conversion
+	function record() {
+		if (!('webkitSpeechRecognition' in window)) {
+			alert('Web Speech API is not supported by this browser. Please use Google Chrome or Microsoft Edge.');
+			return;
+		}
+
+		var recognition = new webkitSpeechRecognition();
+		recognition.lang = 'en-IN';
+
+		recognition.onresult = function (event) {
+			console.log(event);
+			document.getElementById('speechToText').value = event.results[0][0].transcript;
+		}
+
+		recognition.onerror = function (event) {
+			console.error('Speech recognition error:', event.error);
+			if (event.error === 'not-allowed') {
+				alert('Microphone access denied. Please allow microphone access in your browser settings.');
+			} else {
+				alert('Speech recognition error: ' + event.error);
+			}
+		}
+
+		recognition.start();
+	}
+
+	function play() {
+		var videoSource = new Array();
+		var videoElements = document.getElementById("list");
+		if (!videoElements) return;
+		var videos = videoElements.getElementsByTagName("li");
+		
+		if (videos.length === 0) return;
+		
+		for (var j = 0; j < videos.length; j++) {
+			videoSource[j] = "/static/" + videos[j].innerHTML + ".mp4";
+			videos[j].classList.remove('playing');
+		}
+
+		var i = 0;
+		var videoCount = videoSource.length;
+		var videoPlayer = document.getElementById("videoPlayer");
+
+		function videoPlay(videoNum) {
+			// Remove playing class from all
+			for (var j = 0; j < videos.length; j++) {
+				videos[j].classList.remove('playing');
+			}
+			// Add playing class to current
+			videos[videoNum].classList.add('playing');
+			
+			videoPlayer.setAttribute("src", videoSource[videoNum]);
+			videoPlayer.load();
+			videoPlayer.play();
+		}
+
+		videoPlayer.removeEventListener('ended', window.myHandler);
+		
+		window.myHandler = function() {
+			videos[i].classList.remove('playing');
+			i++;
+			if (i === videoCount) {
+				videoPlayer.pause();
+			} else {
+				videoPlay(i);
+			}
+		};
+
+		videoPlayer.addEventListener('ended', window.myHandler, false);
+		videoPlay(0);
+	}
+
+	function playPause() {
+		var videoPlayer = document.getElementById("videoPlayer");
+		var list = document.getElementById("list");
+		
+		if (!list || list.getElementsByTagName("li").length === 0) {
+			return; // No animation to play
+		}
+		
+		// If ended, replay from start
+		if (videoPlayer.ended || videoPlayer.currentTime === 0 || !videoPlayer.src || videoPlayer.src.endsWith(window.location.host + "/")) {
+			play();
+			return;
+		}
+
+		if (videoPlayer.paused) {
+			videoPlayer.play();
+		} else {
+			videoPlayer.pause();
+		}
+	}
+	
+	// Auto play on load if there are words
+	window.addEventListener('load', function() {
+		var list = document.getElementById("list");
+		if (list && list.getElementsByTagName("li").length > 0) {
+			setTimeout(play, 500); // small delay to let DOM settle
+		}
+	});
+</script>
+{% endblock %}
